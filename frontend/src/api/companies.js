@@ -23,3 +23,7 @@ export function listCompanyKPI(companyId) {
 export function listCompanyPrompts(companyId) {
   return get(`/companies/${companyId}/prompts`);
 }
+
+export function listCompanyWorkflows(companyId) {
+  return get(`/companies/${companyId}/workflows`);
+}

@@ -13,7 +13,9 @@ from app.schemas.company import CompanyOut
 from app.schemas.kpi import KPIEntryOut
 from app.schemas.prompt import PromptOut
 from app.schemas.task import TaskOut
+from app.schemas.workflow import WorkflowOut
 from app.services.task_rules import get_company_or_404
+from app.services.workflows import get_workflows_for_slug
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
 
@@ -76,3 +78,19 @@ def list_company_prompts(company_id: int, db: Session = Depends(get_db)):
         .scalars()
         .all()
     )
+
+
+@router.get("/{company_id}/workflows", response_model=list[WorkflowOut])
+def list_company_workflows(company_id: int, db: Session = Depends(get_db)):
+    company = get_company_or_404(db, company_id)
+    workflows = get_workflows_for_slug(company.slug)
+    return [
+        {
+            "name": w["name"],
+            "items": [
+                {"title": title, "category_name": category_name, "minutes": minutes}
+                for title, category_name, minutes in w["items"]
+            ],
+        }
+        for w in workflows
+    ]

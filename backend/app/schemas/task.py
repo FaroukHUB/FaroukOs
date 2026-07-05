@@ -10,6 +10,7 @@ class TaskBase(BaseModel):
     description: str | None = None
     company_id: int
     category_id: int | None = None
+    block_id: int | None = None
     priority: TaskPriority = TaskPriority.MOYENNE
     status: TaskStatus = TaskStatus.A_FAIRE
     estimated_minutes: int = 30
@@ -28,6 +29,7 @@ class TaskUpdate(BaseModel):
     description: str | None = None
     company_id: int | None = None
     category_id: int | None = None
+    block_id: int | None = None
     priority: TaskPriority | None = None
     status: TaskStatus | None = None
     estimated_minutes: int | None = None
@@ -45,6 +47,7 @@ class TaskOut(BaseModel):
     description: str | None
     company_id: int
     category_id: int | None
+    block_id: int | None
     priority: TaskPriority
     status: TaskStatus
     estimated_minutes: int

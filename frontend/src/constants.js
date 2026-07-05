@@ -40,6 +40,22 @@ export function labelFor(list, value) {
   return list.find((item) => item.value === value)?.label || value;
 }
 
+// Couleur associée à chaque entreprise dans la timeline des blocs (voir
+// Timeline.jsx). Un bloc sans entreprise (Organisation, Préparation) reste en
+// gris neutre.
+export const COMPANY_COLORS = {
+  "mobilier-malin": { dot: "bg-blue-500", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
+  "trust-industrie": { dot: "bg-orange-500", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
+  "easymove-wear": { dot: "bg-emerald-500", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
+  "dreams-fly": { dot: "bg-purple-500", bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700" },
+};
+export const NEUTRAL_BLOCK_COLOR = {
+  dot: "bg-slate-400",
+  bg: "bg-slate-50",
+  border: "border-slate-200",
+  text: "text-slate-600",
+};
+
 // Miroir de backend/app/services/kpi_metrics.py — métriques fixes par entreprise (V1, saisie manuelle).
 export const KPI_METRICS = {
   "mobilier-malin": [

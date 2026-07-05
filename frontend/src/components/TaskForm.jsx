@@ -8,6 +8,7 @@ const EMPTY_TASK = {
   description: "",
   company_id: "",
   category_id: "",
+  block_id: null,
   priority: "moyenne",
   status: "a_faire",
   estimated_minutes: 30,
@@ -17,7 +18,16 @@ const EMPTY_TASK = {
   notes: "",
 };
 
-export default function TaskForm({ open, onClose, onSubmit, companies, initialTask, defaultCompanyId }) {
+export default function TaskForm({
+  open,
+  onClose,
+  onSubmit,
+  companies,
+  initialTask,
+  defaultCompanyId,
+  defaultBlockId,
+  lockCompany = false,
+}) {
   const { assignees } = useAssignees();
   const [form, setForm] = useState(EMPTY_TASK);
   const [categories, setCategories] = useState([]);
@@ -35,10 +45,14 @@ export default function TaskForm({ open, onClose, onSubmit, companies, initialTa
         notes: initialTask.notes || "",
       });
     } else {
-      setForm({ ...EMPTY_TASK, company_id: defaultCompanyId || "" });
+      setForm({
+        ...EMPTY_TASK,
+        company_id: defaultCompanyId || "",
+        block_id: defaultBlockId || null,
+      });
     }
     setError("");
-  }, [open, initialTask, defaultCompanyId]);
+  }, [open, initialTask, defaultCompanyId, defaultBlockId]);
 
   useEffect(() => {
     if (!form.company_id) {
@@ -73,6 +87,7 @@ export default function TaskForm({ open, onClose, onSubmit, companies, initialTa
         ...form,
         company_id: Number(form.company_id),
         category_id: form.category_id ? Number(form.category_id) : null,
+        block_id: form.block_id || null,
         estimated_minutes: Number(form.estimated_minutes),
         planned_time: form.planned_time || null,
         description: form.description || null,
@@ -126,7 +141,7 @@ export default function TaskForm({ open, onClose, onSubmit, companies, initialTa
                 <select
                   value={form.company_id}
                   onChange={(e) => handleCompanyChange(e.target.value)}
-                  disabled={!!initialTask}
+                  disabled={!!initialTask || lockCompany}
                   className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
                 >
                   <option value="">—</option>

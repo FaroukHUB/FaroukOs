@@ -30,3 +30,7 @@ export function updateTask(taskId, data) {
 export function deleteTask(taskId) {
   return del(`/tasks/${taskId}`);
 }
+
+export function applyWorkflow(data) {
+  return post("/tasks/apply-workflow", data);
+}

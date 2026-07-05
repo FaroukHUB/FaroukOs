@@ -16,6 +16,7 @@ class Task(Base):
 
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
+    block_id: Mapped[int | None] = mapped_column(ForeignKey("time_blocks.id"), nullable=True)
 
     priority: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority), nullable=False, default=TaskPriority.MOYENNE
@@ -45,3 +46,4 @@ class Task(Base):
 
     company = relationship("Company", back_populates="tasks")
     category = relationship("Category", back_populates="tasks")
+    block = relationship("TimeBlock")

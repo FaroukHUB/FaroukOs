@@ -1,14 +1,15 @@
-from datetime import date
+from datetime import date, time, timedelta
 
 from sqlalchemy.orm import Session
 
 from app.models.assignee_label import AssigneeLabel
 from app.models.category import Category
 from app.models.company import Company
-from app.models.enums import Assignee, PromptType
+from app.models.enums import Assignee, PromptType, TaskPriority
 from app.models.prompt import PromptTemplate
+from app.models.task import Task
+from app.models.time_block import TimeBlock
 from app.services.date_utils import get_week_bounds
-from app.services.schedule_generator import generate_week_tasks
 
 DEFAULT_ASSIGNEE_LABELS = {
     Assignee.MOI.value: "Moi",
@@ -52,6 +53,16 @@ COMPANIES: list[dict] = [
             "Analytics",
         ],
     },
+]
+
+# (label, heure de début, heure de fin, slug entreprise ou None pour un bloc transverse)
+DEFAULT_BLOCKS: list[tuple[str, time, time, str | None]] = [
+    ("Organisation", time(8, 0), time(9, 0), None),
+    ("Mobilier Malin", time(9, 0), time(11, 0), "mobilier-malin"),
+    ("Trust Industrie", time(11, 15), time(15, 0), "trust-industrie"),
+    ("EasyMove Wear", time(15, 15), time(16, 45), "easymove-wear"),
+    ("Dreams Fly", time(16, 45), time(17, 30), "dreams-fly"),
+    ("Préparation du lendemain", time(17, 30), time(18, 0), None),
 ]
 
 # (type, titre, contenu)
@@ -174,6 +185,7 @@ def run_seed(db: Session) -> None:
     """Préremplit la base au premier lancement uniquement (idempotent)."""
     _seed_companies(db)
     _seed_assignee_labels(db)
+    _seed_blocks_and_routine(db)
 
 
 def _seed_assignee_labels(db: Session) -> None:
@@ -188,28 +200,13 @@ def _seed_companies(db: Session) -> None:
     if db.query(Company).count() > 0:
         return
 
-    today = date.today()
-    # La semaine générée est toujours la semaine de travail (lundi-vendredi) en
-    # cours, pour qu'elle apparaisse correctement dans "Aujourd'hui" et le
-    # calendrier semaine même si le seed tourne un week-end.
-    week_start, _ = get_week_bounds(today)
-
-    companies: list[Company] = []
-    categories_by_company: dict[str, dict[str, Category]] = {}
-
     for company_data in COMPANIES:
         company = Company(name=company_data["name"], slug=company_data["slug"])
         db.add(company)
         db.flush()
-        companies.append(company)
 
-        categories_by_name: dict[str, Category] = {}
         for category_name in company_data["categories"]:
-            category = Category(name=category_name, company_id=company.id)
-            db.add(category)
-            db.flush()
-            categories_by_name[category_name] = category
-        categories_by_company[company.slug] = categories_by_name
+            db.add(Category(name=category_name, company_id=company.id))
 
         for prompt_type, title, content in EXAMPLE_PROMPTS.get(company.slug, []):
             db.add(
@@ -221,7 +218,113 @@ def _seed_companies(db: Session) -> None:
                 )
             )
 
-    for task in generate_week_tasks(companies, categories_by_company, week_start):
-        db.add(task)
+    db.commit()
+
+
+def _seed_blocks_and_routine(db: Session) -> None:
+    """Crée les blocs horaires par défaut (une seule fois) puis, seulement à la
+    toute première génération de la base, la routine hebdomadaire (Search
+    Console/Analytics/KPI le lundi, rapport le vendredi) par entreprise.
+
+    Aucune tâche « projet » n'est générée automatiquement : c'est Farouk qui
+    construit sa semaine via les workflows, bloc par bloc.
+    """
+    if db.query(TimeBlock).count() > 0:
+        return
+
+    companies_by_slug = {c.slug: c for c in db.query(Company).all()}
+    categories_by_company: dict[str, dict[str, Category]] = {}
+    for company in companies_by_slug.values():
+        categories_by_company[company.slug] = {
+            cat.name: cat for cat in db.query(Category).filter(Category.company_id == company.id)
+        }
+
+    blocks_by_slug: dict[str | None, TimeBlock] = {}
+    for position, (label, start_time, end_time, company_slug) in enumerate(DEFAULT_BLOCKS):
+        company = companies_by_slug.get(company_slug) if company_slug else None
+        block = TimeBlock(
+            label=label,
+            company_id=company.id if company else None,
+            start_time=start_time,
+            end_time=end_time,
+            position=position,
+        )
+        db.add(block)
+        db.flush()
+        if label == "Organisation":
+            blocks_by_slug["organisation"] = block
+        if label == "Préparation du lendemain":
+            blocks_by_slug["preparation"] = block
+
+    today = date.today()
+    week_start, _ = get_week_bounds(today)
+    monday = week_start
+    friday = week_start + timedelta(days=4)
+
+    organisation_block = blocks_by_slug["organisation"]
+    preparation_block = blocks_by_slug["preparation"]
+
+    for company in companies_by_slug.values():
+        cat_map = categories_by_company[company.slug]
+        db.add(
+            Task(
+                title=f"Search Console – {company.name}",
+                company_id=company.id,
+                category_id=cat_map.get("Search Console").id if cat_map.get("Search Console") else None,
+                block_id=organisation_block.id,
+                priority=TaskPriority.MOYENNE,
+                estimated_minutes=15,
+                planned_date=monday,
+                assignee=Assignee.MOI,
+            )
+        )
+        db.add(
+            Task(
+                title=f"Analytics – {company.name}",
+                company_id=company.id,
+                category_id=cat_map.get("Analytics").id if cat_map.get("Analytics") else None,
+                block_id=organisation_block.id,
+                priority=TaskPriority.MOYENNE,
+                estimated_minutes=15,
+                planned_date=monday,
+                assignee=Assignee.MOI,
+            )
+        )
+        db.add(
+            Task(
+                title=f"KPI de la semaine – {company.name}",
+                company_id=company.id,
+                category_id=None,
+                block_id=organisation_block.id,
+                priority=TaskPriority.MOYENNE,
+                estimated_minutes=15,
+                planned_date=monday,
+                assignee=Assignee.MOI,
+            )
+        )
+        db.add(
+            Task(
+                title=f"Rapport hebdomadaire – {company.name}",
+                company_id=company.id,
+                category_id=None,
+                block_id=preparation_block.id,
+                priority=TaskPriority.HAUTE,
+                estimated_minutes=30,
+                planned_date=friday,
+                assignee=Assignee.MOI,
+            )
+        )
+        db.add(
+            Task(
+                title=f"Mettre à jour les KPI – {company.name}",
+                company_id=company.id,
+                category_id=None,
+                block_id=preparation_block.id,
+                priority=TaskPriority.MOYENNE,
+                estimated_minutes=20,
+                planned_date=friday,
+                assignee=Assignee.MOI,
+            )
+        )
 
     db.commit()
