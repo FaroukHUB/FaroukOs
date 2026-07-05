@@ -7,7 +7,7 @@ primary_region = "cdg"
 
 [env]
   DATABASE_URL = "sqlite:////data/farouk_os.db"
-  FRONTEND_ORIGINS = "https://ton-projet.vercel.app"
+  FRONTEND_ORIGINS = "https://farouk-os-snowy.vercel.app"
 
 [[mounts]]
   source = "farouk_os_data"
