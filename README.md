@@ -46,6 +46,20 @@ npm run dev
 Dashboard, Aujourd'hui, Calendrier semaine, Entreprises, Tâches, Renforts, KPI,
 Prompts IA, Paramètres.
 
+## Mise à jour automatique (plus besoin du terminal)
+
+Une fois le déploiement initial fait (ci-dessous) :
+- **Frontend** : Vercel republie automatiquement à chaque push GitHub, rien à faire.
+- **Backend** : `.github/workflows/fly-deploy.yml` republie automatiquement sur
+  Fly.io à chaque push qui modifie `backend/`. Configuration unique :
+  1. Sur ton Mac : `fly tokens create deploy -x 999999h` → copie le token affiché
+     (commence par `FlyV1 ...`).
+  2. Sur GitHub : *Settings* du repo → *Secrets and variables* → *Actions* →
+     *New repository secret* → nom `FLY_API_TOKEN`, valeur = le token copié.
+
+Après ça, tout changement de code se déploie seul (backend + frontend) — plus
+jamais besoin de `fly deploy` à la main.
+
 ## Déploiement gratuit : backend sur Fly.io + frontend sur Vercel
 
 Fly.io fait tourner l'app dans un vrai conteneur (pas de serverless), avec un disque
