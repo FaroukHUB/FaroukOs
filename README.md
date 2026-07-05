@@ -46,6 +46,48 @@ npm run dev
 Dashboard, Aujourd'hui, Calendrier semaine, Entreprises, Tâches, Renforts, KPI,
 Prompts IA, Paramètres.
 
+## Déploiement sur hébergement mutualisé 02switch (cPanel)
+
+Le mutualisé cPanel ne fait tourner que du WSGI (via Passenger), alors que FastAPI est
+ASGI. Le dépôt inclut déjà ce qu'il faut : `backend/passenger_wsgi.py` (adaptateur
+`a2wsgi`) et `frontend/public/.htaccess` (réécriture SPA, copié dans `dist/` au build).
+
+**1. Backend — sous-domaine `api.tondomaine.fr`**
+
+1. cPanel > *Domaines* : créer le sous-domaine `api.tondomaine.fr`.
+2. cPanel > *Setup Python App* : créer une application
+   - Python 3.11 (ou la version la plus récente proposée)
+   - Racine de l'app : dossier du sous-domaine (ex. `api.tondomaine.fr`)
+   - Fichier de démarrage : `passenger_wsgi.py` — callable : `application`
+3. Déposer le contenu de `backend/` (dossier `app/`, `requirements.txt`,
+   `passenger_wsgi.py`) dans cette racine (Git, ou zip + File Manager).
+4. Dans le terminal cPanel, activer le virtualenv indiqué par le panneau puis :
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. Dans *Setup Python App*, définir la variable d'environnement `FRONTEND_ORIGINS`
+   avec l'URL du frontend, ex. `https://app.tondomaine.fr` (sans slash final).
+6. Redémarrer l'app ("Restart"), puis vérifier `https://api.tondomaine.fr/api/health`.
+
+**2. Frontend — sous-domaine `app.tondomaine.fr`**
+
+1. En local, créer `frontend/.env` (copie de `.env.example`) avec :
+   ```
+   VITE_API_BASE_URL=https://api.tondomaine.fr/api
+   ```
+2. `npm run build` → génère `frontend/dist/` (avec le `.htaccess` inclus).
+3. cPanel > *Domaines* : créer le sous-domaine `app.tondomaine.fr`.
+4. Déposer le contenu de `dist/` (pas le dossier lui-même) dans la racine de ce
+   sous-domaine.
+
+À savoir : SQLite doit rester dans un dossier accessible en écriture par
+l'app (la racine convient) ; pas de WebSocket dans ce mode (l'app n'en utilise pas) ;
+un léger délai est possible au premier accès après une période d'inactivité
+(comportement normal de Passenger en mutualisé).
+
+Sur un VPS (02switch ou autre), pas besoin de tout ça : `uvicorn app.main:app` +
+nginx en reverse proxy suffisent, comme en local.
+
 ## Règles métier clés
 
 - Une tâche ne peut utiliser qu'une catégorie de la même entreprise.

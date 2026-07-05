@@ -1,4 +1,7 @@
-const BASE_URL = "/api";
+// En dev, le proxy Vite redirige /api vers le backend local (voir vite.config.js).
+// En prod (ex: 02switch), le frontend et le backend sont sur des sous-domaines
+// différents : VITE_API_BASE_URL doit alors pointer vers l'URL complète du backend.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 async function request(path, options = {}) {
   const response = await fetch(`${BASE_URL}${path}`, {

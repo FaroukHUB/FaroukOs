@@ -1,0 +1,8 @@
+# Farouk OS est une SPA (React Router) : toute route inconnue doit retomber sur
+# index.html, sinon un rafraîchissement sur /taches par exemple donne un 404 Apache.
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
