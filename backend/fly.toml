@@ -1,0 +1,25 @@
+# Déploiement Fly.io. Adapter `app` si le nom est déjà pris, et FRONTEND_ORIGINS
+# une fois l'URL Vercel du frontend connue.
+app = "farouk-os-api"
+primary_region = "cdg"
+
+[build]
+
+[env]
+  DATABASE_URL = "sqlite:////data/farouk_os.db"
+  FRONTEND_ORIGINS = "https://ton-projet.vercel.app"
+
+[[mounts]]
+  source = "farouk_os_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

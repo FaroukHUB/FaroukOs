@@ -46,6 +46,93 @@ npm run dev
 Dashboard, Aujourd'hui, Calendrier semaine, Entreprises, Tâches, Renforts, KPI,
 Prompts IA, Paramètres.
 
+## Déploiement gratuit : backend sur Fly.io + frontend sur Vercel
+
+Fly.io fait tourner l'app dans un vrai conteneur (pas de serverless), avec un disque
+persistant pour le fichier SQLite — et tu gardes ton propre sous-domaine. Une seule
+CLI à installer une fois (`flyctl`), le reste se fait en 3 commandes.
+
+**1. Backend sur Fly.io**
+
+1. Installer la CLI : voir https://fly.io/docs/flyctl/install/ puis `fly auth signup`
+   (ou `fly auth login` si tu as déjà un compte).
+2. Depuis `backend/` (le dépôt contient déjà `Dockerfile` et `fly.toml`) :
+   ```bash
+   cd backend
+   fly launch --no-deploy   # détecte le Dockerfile, reprend fly.toml, choisit un nom si "farouk-os-api" est pris
+   fly volumes create farouk_os_data --size 1 --region cdg
+   ```
+3. Modifier `FRONTEND_ORIGINS` dans `fly.toml` avec l'URL Vercel finale (étape 2
+   ci-dessous), puis :
+   ```bash
+   fly deploy
+   ```
+4. Vérifier `https://<ton-app>.fly.dev/api/health`. Pour un sous-domaine perso
+   (`api.tondomaine.fr`), `fly certs add api.tondomaine.fr` puis suivre les
+   instructions DNS affichées.
+
+**2. Frontend sur Vercel**
+
+1. Sur vercel.com, *Add New Project* → importer ton repo GitHub.
+2. *Root Directory* : `frontend`. Framework preset : **Vite** (auto-détecté).
+3. *Environment Variables* : ajouter `VITE_API_BASE_URL` =
+   `https://<ton-app>.fly.dev/api` (ou ton sous-domaine perso une fois configuré).
+4. Déployer. Recopier l'URL Vercel obtenue dans `FRONTEND_ORIGINS` (fly.toml) si elle
+   diffère, puis `fly deploy` à nouveau.
+
+À savoir : `min_machines_running = 0` dans `fly.toml` met l'app en veille sans trafic
+(gratuit) — léger délai au premier accès après une pause, sans impact fonctionnel.
+
+## Alternative gratuite sans CLI : PythonAnywhere + Vercel
+
+Encore plus simple à mettre en place (aucune CLI, aucune carte bancaire), mais sans
+sous-domaine perso sur le compte gratuit (`tonpseudo.pythonanywhere.com`).
+PythonAnywhere ne fait tourner que du WSGI, donc on réutilise le même
+`backend/passenger_wsgi.py` (adaptateur `a2wsgi`) que pour un mutualisé cPanel.
+
+**1. Backend sur PythonAnywhere (compte gratuit "Beginner")**
+
+1. Créer un compte sur pythonanywhere.com (gratuit, `tonpseudo.pythonanywhere.com`).
+2. Onglet *Consoles* → ouvrir une console **Bash**, puis :
+   ```bash
+   git clone <URL_DE_TON_REPO> farouk-os
+   cd farouk-os/backend
+   python3.11 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+3. Onglet *Web* → *Add a new web app* → **Manual configuration** → Python 3.11.
+4. Dans la section *Virtualenv*, indiquer le chemin :
+   `/home/tonpseudo/farouk-os/backend/venv`
+5. Cliquer sur le lien *WSGI configuration file* et remplacer tout le contenu par :
+   ```python
+   import sys, os
+
+   path = '/home/tonpseudo/farouk-os/backend'
+   if path not in sys.path:
+       sys.path.insert(0, path)
+
+   os.environ['FRONTEND_ORIGINS'] = 'https://ton-projet.vercel.app'
+
+   from passenger_wsgi import application
+   ```
+   (le compte gratuit n'a pas d'écran "variables d'environnement" séparé — on les
+   définit directement ici, avant l'import)
+6. Bouton vert **Reload**, puis vérifier `https://tonpseudo.pythonanywhere.com/api/health`.
+
+**2. Frontend sur Vercel**
+
+1. Sur vercel.com, *Add New Project* → importer ton repo GitHub.
+2. *Root Directory* : `frontend`. Framework preset : **Vite** (auto-détecté).
+3. *Environment Variables* : ajouter `VITE_API_BASE_URL` =
+   `https://tonpseudo.pythonanywhere.com/api`.
+4. Déployer. Vercel te donne une URL du style `ton-projet.vercel.app` (à recopier
+   dans le fichier WSGI ci-dessus si l'URL diffère de celle utilisée).
+
+À savoir sur le gratuit PythonAnywhere : le fichier SQLite est conservé indéfiniment
+(pas d'expiration), mais les requêtes vers des domaines externes sont bloquées par
+défaut — sans impact ici puisque l'app ne fait aucun appel externe.
+
 ## Déploiement sur hébergement mutualisé 02switch (cPanel)
 
 Le mutualisé cPanel ne fait tourner que du WSGI (via Passenger), alors que FastAPI est

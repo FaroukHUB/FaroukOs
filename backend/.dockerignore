@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+farouk_os.db
+passenger_wsgi.py
