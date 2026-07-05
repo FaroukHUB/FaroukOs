@@ -1,14 +1,14 @@
-from datetime import date, timedelta
+from datetime import date
 
 from sqlalchemy.orm import Session
 
 from app.models.assignee_label import AssigneeLabel
 from app.models.category import Category
 from app.models.company import Company
-from app.models.enums import Assignee, PromptType, TaskPriority, TaskStatus
+from app.models.enums import Assignee, PromptType
 from app.models.prompt import PromptTemplate
-from app.models.task import Task
 from app.services.date_utils import get_week_bounds
+from app.services.schedule_generator import generate_week_tasks
 
 DEFAULT_ASSIGNEE_LABELS = {
     Assignee.MOI.value: "Moi",
@@ -53,34 +53,6 @@ COMPANIES: list[dict] = [
         ],
     },
 ]
-
-# (titre, catégorie, priorité, durée en minutes, jour offset depuis aujourd'hui, assigné)
-EXAMPLE_TASKS: dict[str, list[tuple]] = {
-    "mobilier-malin": [
-        ("Optimiser 4 fiches produits", "Fiches produits", TaskPriority.HAUTE, 90, 0, Assignee.MOI),
-        ("Créer 5 épingles Pinterest", "Pinterest", TaskPriority.MOYENNE, 60, 0, Assignee.RENFORT_1),
-        ("Vérifier Google Merchant Center", "Google Merchant Center", TaskPriority.HAUTE, 30, 1, Assignee.MOI),
-        ("Ajouter maillage interne sur 3 produits", "Maillage interne", TaskPriority.BASSE, 45, 2, Assignee.MOI),
-    ],
-    "trust-industrie": [
-        ("Corriger les pages 404 prioritaires", "404", TaskPriority.HAUTE, 60, 0, Assignee.MOI),
-        ("Nettoyer les H1 du site", "H1", TaskPriority.MOYENNE, 45, 0, Assignee.MOI),
-        ("Optimiser les meta descriptions", "Meta descriptions", TaskPriority.MOYENNE, 60, 1, Assignee.RENFORT_2),
-        ("Auditer les catégories principales", "Audit SEO", TaskPriority.HAUTE, 90, 2, Assignee.MOI),
-    ],
-    "easymove-wear": [
-        ("Créer 5 produits Temu", "Temu", TaskPriority.HAUTE, 120, 0, Assignee.RENFORT_1),
-        ("Préparer 3 fiches TikTok Shop", "TikTok Shop", TaskPriority.MOYENNE, 60, 0, Assignee.RENFORT_1),
-        ("Créer contenu Instagram", "Instagram", TaskPriority.MOYENNE, 45, 1, Assignee.MOI),
-        ("Optimiser fiches produits", "Fiches produits", TaskPriority.BASSE, 60, 2, Assignee.RENFORT_2),
-    ],
-    "dreams-fly": [
-        ("Préparer 1 article SEO", "Blog", TaskPriority.HAUTE, 90, 0, Assignee.MOI),
-        ("Créer publication Facebook", "Facebook", TaskPriority.MOYENNE, 30, 0, Assignee.MOI),
-        ("Vérifier Search Console", "Search Console", TaskPriority.BASSE, 30, 1, Assignee.MOI),
-        ("Optimiser une page existante", "SEO", TaskPriority.MOYENNE, 45, 2, Assignee.MOI),
-    ],
-}
 
 # (type, titre, contenu)
 EXAMPLE_PROMPTS: dict[str, list[tuple]] = {
@@ -217,16 +189,19 @@ def _seed_companies(db: Session) -> None:
         return
 
     today = date.today()
-    # Ancre les tâches d'exemple sur la semaine de travail (lundi-vendredi) en
-    # cours, pour qu'elles apparaissent correctement dans "Aujourd'hui" et le
+    # La semaine générée est toujours la semaine de travail (lundi-vendredi) en
+    # cours, pour qu'elle apparaisse correctement dans "Aujourd'hui" et le
     # calendrier semaine même si le seed tourne un week-end.
-    work_week_start, _ = get_week_bounds(today)
-    base_date = today if today.weekday() < 5 else work_week_start
+    week_start, _ = get_week_bounds(today)
+
+    companies: list[Company] = []
+    categories_by_company: dict[str, dict[str, Category]] = {}
 
     for company_data in COMPANIES:
         company = Company(name=company_data["name"], slug=company_data["slug"])
         db.add(company)
         db.flush()
+        companies.append(company)
 
         categories_by_name: dict[str, Category] = {}
         for category_name in company_data["categories"]:
@@ -234,23 +209,7 @@ def _seed_companies(db: Session) -> None:
             db.add(category)
             db.flush()
             categories_by_name[category_name] = category
-
-        for title, category_name, priority, minutes, day_offset, assignee in EXAMPLE_TASKS.get(
-            company.slug, []
-        ):
-            category = categories_by_name.get(category_name)
-            db.add(
-                Task(
-                    title=title,
-                    company_id=company.id,
-                    category_id=category.id if category else None,
-                    priority=priority,
-                    status=TaskStatus.A_FAIRE,
-                    estimated_minutes=minutes,
-                    planned_date=base_date + timedelta(days=day_offset),
-                    assignee=assignee,
-                )
-            )
+        categories_by_company[company.slug] = categories_by_name
 
         for prompt_type, title, content in EXAMPLE_PROMPTS.get(company.slug, []):
             db.add(
@@ -261,5 +220,8 @@ def _seed_companies(db: Session) -> None:
                     content=content,
                 )
             )
+
+    for task in generate_week_tasks(companies, categories_by_company, week_start):
+        db.add(task)
 
     db.commit()
