@@ -2,12 +2,19 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.models.assignee_label import AssigneeLabel
 from app.models.category import Category
 from app.models.company import Company
 from app.models.enums import Assignee, PromptType, TaskPriority, TaskStatus
 from app.models.prompt import PromptTemplate
 from app.models.task import Task
 from app.services.date_utils import get_week_bounds
+
+DEFAULT_ASSIGNEE_LABELS = {
+    Assignee.MOI.value: "Moi",
+    Assignee.RENFORT_1.value: "Renfort 1",
+    Assignee.RENFORT_2.value: "Renfort 2",
+}
 
 COMPANIES: list[dict] = [
     {
@@ -51,21 +58,21 @@ COMPANIES: list[dict] = [
 EXAMPLE_TASKS: dict[str, list[tuple]] = {
     "mobilier-malin": [
         ("Optimiser 4 fiches produits", "Fiches produits", TaskPriority.HAUTE, 90, 0, Assignee.MOI),
-        ("Créer 5 épingles Pinterest", "Pinterest", TaskPriority.MOYENNE, 60, 0, Assignee.STAGIAIRE_1),
+        ("Créer 5 épingles Pinterest", "Pinterest", TaskPriority.MOYENNE, 60, 0, Assignee.RENFORT_1),
         ("Vérifier Google Merchant Center", "Google Merchant Center", TaskPriority.HAUTE, 30, 1, Assignee.MOI),
         ("Ajouter maillage interne sur 3 produits", "Maillage interne", TaskPriority.BASSE, 45, 2, Assignee.MOI),
     ],
     "trust-industrie": [
         ("Corriger les pages 404 prioritaires", "404", TaskPriority.HAUTE, 60, 0, Assignee.MOI),
         ("Nettoyer les H1 du site", "H1", TaskPriority.MOYENNE, 45, 0, Assignee.MOI),
-        ("Optimiser les meta descriptions", "Meta descriptions", TaskPriority.MOYENNE, 60, 1, Assignee.STAGIAIRE_2),
+        ("Optimiser les meta descriptions", "Meta descriptions", TaskPriority.MOYENNE, 60, 1, Assignee.RENFORT_2),
         ("Auditer les catégories principales", "Audit SEO", TaskPriority.HAUTE, 90, 2, Assignee.MOI),
     ],
     "easymove-wear": [
-        ("Créer 5 produits Temu", "Temu", TaskPriority.HAUTE, 120, 0, Assignee.STAGIAIRE_1),
-        ("Préparer 3 fiches TikTok Shop", "TikTok Shop", TaskPriority.MOYENNE, 60, 0, Assignee.STAGIAIRE_1),
+        ("Créer 5 produits Temu", "Temu", TaskPriority.HAUTE, 120, 0, Assignee.RENFORT_1),
+        ("Préparer 3 fiches TikTok Shop", "TikTok Shop", TaskPriority.MOYENNE, 60, 0, Assignee.RENFORT_1),
         ("Créer contenu Instagram", "Instagram", TaskPriority.MOYENNE, 45, 1, Assignee.MOI),
-        ("Optimiser fiches produits", "Fiches produits", TaskPriority.BASSE, 60, 2, Assignee.STAGIAIRE_2),
+        ("Optimiser fiches produits", "Fiches produits", TaskPriority.BASSE, 60, 2, Assignee.RENFORT_2),
     ],
     "dreams-fly": [
         ("Préparer 1 article SEO", "Blog", TaskPriority.HAUTE, 90, 0, Assignee.MOI),
@@ -193,6 +200,19 @@ EXAMPLE_PROMPTS: dict[str, list[tuple]] = {
 
 def run_seed(db: Session) -> None:
     """Préremplit la base au premier lancement uniquement (idempotent)."""
+    _seed_companies(db)
+    _seed_assignee_labels(db)
+
+
+def _seed_assignee_labels(db: Session) -> None:
+    if db.query(AssigneeLabel).count() > 0:
+        return
+    for key, label in DEFAULT_ASSIGNEE_LABELS.items():
+        db.add(AssigneeLabel(key=key, label=label))
+    db.commit()
+
+
+def _seed_companies(db: Session) -> None:
     if db.query(Company).count() > 0:
         return
 

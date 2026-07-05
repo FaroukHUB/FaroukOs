@@ -13,10 +13,12 @@ export const TASK_PRIORITIES = [
   { value: "basse", label: "Basse" },
 ];
 
+// Valeurs par défaut, écrasées dynamiquement par AssigneesContext (libellés
+// renommables par Farouk depuis les Paramètres). Les clés (value) sont fixes.
 export const ASSIGNEES = [
   { value: "moi", label: "Moi" },
-  { value: "stagiaire_1", label: "Stagiaire 1" },
-  { value: "stagiaire_2", label: "Stagiaire 2" },
+  { value: "renfort_1", label: "Renfort 1" },
+  { value: "renfort_2", label: "Renfort 2" },
 ];
 
 export const PROMPT_TYPES = [

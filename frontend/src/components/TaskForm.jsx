@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { listCompanyCategories } from "../api/companies";
-import { ASSIGNEES, TASK_PRIORITIES, TASK_STATUSES } from "../constants";
+import { useAssignees } from "../context/AssigneesContext";
+import { TASK_PRIORITIES, TASK_STATUSES } from "../constants";
 
 const EMPTY_TASK = {
   title: "",
@@ -17,6 +18,7 @@ const EMPTY_TASK = {
 };
 
 export default function TaskForm({ open, onClose, onSubmit, companies, initialTask, defaultCompanyId }) {
+  const { assignees } = useAssignees();
   const [form, setForm] = useState(EMPTY_TASK);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
@@ -227,8 +229,8 @@ export default function TaskForm({ open, onClose, onSubmit, companies, initialTa
                 onChange={(e) => update("assignee", e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
               >
-                {ASSIGNEES.map((a) => (
-                  <option key={a.value} value={a.value}>
+                {assignees.map((a) => (
+                  <option key={a.key} value={a.key}>
                     {a.label}
                   </option>
                 ))}

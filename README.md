@@ -43,7 +43,7 @@ npm run dev
 
 ## Pages V1
 
-Dashboard, Aujourd'hui, Calendrier semaine, Entreprises, Tâches, Stagiaires, KPI,
+Dashboard, Aujourd'hui, Calendrier semaine, Entreprises, Tâches, Renforts, KPI,
 Prompts IA, Paramètres.
 
 ## Règles métier clés

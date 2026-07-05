@@ -5,8 +5,8 @@ import CompanyDetailPage from "./pages/CompanyDetailPage";
 import Dashboard from "./pages/Dashboard";
 import KPIPage from "./pages/KPIPage";
 import PromptsPage from "./pages/PromptsPage";
+import RenfortsPage from "./pages/RenfortsPage";
 import SettingsPage from "./pages/SettingsPage";
-import StagiairesPage from "./pages/StagiairesPage";
 import TasksPage from "./pages/TasksPage";
 import TodayPage from "./pages/TodayPage";
 import WeekCalendarPage from "./pages/WeekCalendarPage";
@@ -23,7 +23,7 @@ export default function App() {
           <Route path="/entreprises" element={<CompaniesPage />} />
           <Route path="/entreprises/:companyId" element={<CompanyDetailPage />} />
           <Route path="/taches" element={<TasksPage />} />
-          <Route path="/stagiaires" element={<StagiairesPage />} />
+          <Route path="/renforts" element={<RenfortsPage />} />
           <Route path="/kpi" element={<KPIPage />} />
           <Route path="/prompts" element={<PromptsPage />} />
           <Route path="/parametres" element={<SettingsPage />} />

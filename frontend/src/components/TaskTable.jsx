@@ -1,4 +1,5 @@
-import { ASSIGNEES, labelFor, TASK_PRIORITIES, TASK_STATUSES } from "../constants";
+import { useAssignees } from "../context/AssigneesContext";
+import { TASK_PRIORITIES, TASK_STATUSES } from "../constants";
 import PriorityBadge from "./PriorityBadge";
 import StatusBadge from "./StatusBadge";
 
@@ -13,6 +14,8 @@ export default function TaskTable({
   onEdit,
   onDelete,
 }) {
+  const { labelFor: assigneeLabelFor } = useAssignees();
+
   if (tasks.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-300 bg-white py-10 text-center text-sm text-slate-400">
@@ -101,7 +104,7 @@ export default function TaskTable({
               </td>
               <td className="px-4 py-3 text-slate-600">{task.estimated_minutes} min</td>
               <td className="px-4 py-3 text-slate-600">{task.planned_date}</td>
-              <td className="px-4 py-3 text-slate-600">{labelFor(ASSIGNEES, task.assignee)}</td>
+              <td className="px-4 py-3 text-slate-600">{assigneeLabelFor(task.assignee)}</td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2 whitespace-nowrap">
                   {onEdit && (

@@ -4,7 +4,8 @@ import { createTask, deleteTask, listTasks, updateTask } from "../api/tasks";
 import Header from "../components/Header";
 import TaskForm from "../components/TaskForm";
 import TaskTable from "../components/TaskTable";
-import { ASSIGNEES, TASK_PRIORITIES, TASK_STATUSES } from "../constants";
+import { useAssignees } from "../context/AssigneesContext";
+import { TASK_PRIORITIES, TASK_STATUSES } from "../constants";
 
 const EMPTY_FILTERS = {
   company_id: "",
@@ -16,6 +17,7 @@ const EMPTY_FILTERS = {
 };
 
 export default function TasksPage() {
+  const { assignees } = useAssignees();
   const [companies, setCompanies] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -172,8 +174,8 @@ export default function TasksPage() {
               className="mt-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
             >
               <option value="">Tous</option>
-              {ASSIGNEES.map((a) => (
-                <option key={a.value} value={a.value}>
+              {assignees.map((a) => (
+                <option key={a.key} value={a.key}>
                   {a.label}
                 </option>
               ))}

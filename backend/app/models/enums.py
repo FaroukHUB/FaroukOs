@@ -18,8 +18,8 @@ class TaskPriority(str, enum.Enum):
 
 class Assignee(str, enum.Enum):
     MOI = "moi"
-    STAGIAIRE_1 = "stagiaire_1"
-    STAGIAIRE_2 = "stagiaire_2"
+    RENFORT_1 = "renfort_1"
+    RENFORT_2 = "renfort_2"
 
 
 class PromptType(str, enum.Enum):

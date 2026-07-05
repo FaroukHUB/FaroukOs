@@ -3,16 +3,20 @@ import { listCompanies, listCompanyCategories } from "../api/companies";
 import { listTasks, updateTask } from "../api/tasks";
 import Header from "../components/Header";
 import TaskTable from "../components/TaskTable";
-import { ASSIGNEES } from "../constants";
+import { useAssignees } from "../context/AssigneesContext";
 
-const STAGIAIRES = ASSIGNEES.filter((a) => a.value !== "moi");
-
-export default function StagiairesPage() {
-  const [active, setActive] = useState(STAGIAIRES[0].value);
+export default function RenfortsPage() {
+  const { assignees } = useAssignees();
+  const renforts = assignees.filter((a) => a.key !== "moi");
+  const [active, setActive] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!active && renforts.length > 0) setActive(renforts[0].key);
+  }, [renforts, active]);
 
   useEffect(() => {
     listCompanies().then(setCompanies);
@@ -25,6 +29,7 @@ export default function StagiairesPage() {
   }, [companies]);
 
   function load() {
+    if (!active) return;
     listTasks({ assignee: active }).then(setTasks).catch((err) => setError(err.message));
   }
 
@@ -46,20 +51,20 @@ export default function StagiairesPage() {
 
   return (
     <div>
-      <Header title="Stagiaires" subtitle="Tâches assignées à chaque stagiaire" />
+      <Header title="Renforts" subtitle="Tâches assignées à chaque renfort" />
       <div className="space-y-4 px-8 py-6">
         <div className="flex gap-2">
-          {STAGIAIRES.map((s) => (
+          {renforts.map((r) => (
             <button
-              key={s.value}
-              onClick={() => setActive(s.value)}
+              key={r.key}
+              onClick={() => setActive(r.key)}
               className={`rounded px-3 py-1.5 text-sm font-medium ${
-                active === s.value
+                active === r.key
                   ? "bg-blue-600 text-white"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
             >
-              {s.label}
+              {r.label}
             </button>
           ))}
         </div>

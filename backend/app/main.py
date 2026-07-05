@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import companies, dashboard, kpi, prompts, tasks
+from app.api import assignees, companies, dashboard, kpi, prompts, tasks
 from app.database import Base, SessionLocal, engine
 from app.services.seed import run_seed
 
@@ -33,6 +33,7 @@ app.include_router(tasks.router)
 app.include_router(kpi.router)
 app.include_router(prompts.router)
 app.include_router(dashboard.router)
+app.include_router(assignees.router)
 
 
 @app.get("/api/health")

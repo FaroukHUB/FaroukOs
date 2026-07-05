@@ -6,7 +6,7 @@ const LINKS = [
   { to: "/semaine", label: "Calendrier semaine" },
   { to: "/entreprises", label: "Entreprises" },
   { to: "/taches", label: "Tâches" },
-  { to: "/stagiaires", label: "Stagiaires" },
+  { to: "/renforts", label: "Renforts" },
   { to: "/kpi", label: "KPI" },
   { to: "/prompts", label: "Prompts IA" },
   { to: "/parametres", label: "Paramètres" },
